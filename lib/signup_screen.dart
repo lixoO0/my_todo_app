@@ -4,10 +4,17 @@ import 'package:my_todo_app/home_screen.dart';
 import 'package:my_todo_app/login_screen.dart';
 import 'package:my_todo_app/services/auth_services.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
+  @override
+  _SignupScreenState createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  bool _obscurePassword = true; // Для приховування/показу пароля
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +59,7 @@ class SignupScreen extends StatelessWidget {
               SizedBox(height: 20),
               TextField(
                 controller: _passwordController,
+                obscureText: _obscurePassword,
                 style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   focusedBorder: OutlineInputBorder(
@@ -63,6 +71,19 @@ class SignupScreen extends StatelessWidget {
                   ),
                   labelText: "Password",
                   labelStyle: TextStyle(color: Colors.white60),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.white60,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
               ),
               SizedBox(height: 40),
@@ -71,11 +92,10 @@ class SignupScreen extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () async {
-                    User? user = await _authService
-                        .registerWithEmailAndPassword(
-                          _emailController.text,
-                          _passwordController.text,
-                        );
+                    User? user = await _authService.registerWithEmailAndPassword(
+                      _emailController.text,
+                      _passwordController.text,
+                    );
 
                     if (user != null) {
                       Navigator.push(
