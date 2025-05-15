@@ -45,14 +45,22 @@ class DatabaseServices {
   }
 
   //get pending tasks
-  Stream<List<Todo>> get todos{
-    return todoCollection.where('uid',isEqualTo: user!.uid).where('completed',isEqualTo: false).snapshots().map(_todoListFromSnapshot);
-  }
+  Stream<List<Todo>> get todos {
+  return todoCollection
+      .where('userId', isEqualTo: user!.uid)
+      .where('completed', isEqualTo: false)
+      .snapshots()
+      .map(_todoListFromSnapshot);
+}
 
-  //get completed tasks
-  Stream<List<Todo>> get completedTodos{
-    return todoCollection.where('uid',isEqualTo: user!.uid).where('completed',isEqualTo: true).snapshots().map(_todoListFromSnapshot);
-  }
+Stream<List<Todo>> get completedTodos {
+  return todoCollection
+      .where('userId', isEqualTo: user!.uid)
+      .where('completed', isEqualTo: true)
+      .snapshots()
+      .map(_todoListFromSnapshot);
+}
+
 
   List<Todo> _todoListFromSnapshot(QuerySnapshot snapshot) {
     return snapshot.docs.map((doc) {
