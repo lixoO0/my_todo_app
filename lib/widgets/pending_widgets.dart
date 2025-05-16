@@ -62,6 +62,38 @@ class _PendingWidgetState extends State<PendingWidget> {
                 ),
                 child: Slidable(
                   key: ValueKey(todo.id),
+                  endActionPane: ActionPane(motion: DrawerMotion(),
+                  children: [
+                    SlidableAction(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      icon: Icons.done,
+                      label: "Mark as done",
+                      onPressed: (context){
+                      _databaseServices.updateTodoStatus(todo.id, true);
+                    })
+                  ],
+                  ),
+                  startActionPane: ActionPane(motion: DrawerMotion(),
+                  children: [
+                    SlidableAction(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.white,
+                      icon: Icons.edit,
+                      label: "Edit",
+                      onPressed: (context){
+                      _showTaskDialog(context, todo: todo);
+                    }),
+                    SlidableAction(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      icon: Icons.delete,
+                      label: "Delete",
+                      onPressed: (context) async{
+                      await _databaseServices.deleteTodo(todo.id);
+                    }),
+                    ],
+                  ),
                   child: ListTile(
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 20,
@@ -111,6 +143,86 @@ class _PendingWidgetState extends State<PendingWidget> {
             child: CircularProgressIndicator(color: Colors.white),
           );
         }
+      },
+    );
+  }
+  void _showTaskDialog(BuildContext context, {Todo? todo}) {
+    final TextEditingController _titleController = TextEditingController( text: todo?.title ?? '');
+    final TextEditingController _descriptionController =
+        TextEditingController(text: todo?.description ?? '');
+    final DatabaseServices _databaseService = DatabaseServices();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            todo == null ? "Add task" : "Edit task",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: "Title",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: "Description",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.red, fontSize: 18),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                if (todo == null) {
+                  await _databaseService.addTodoTask(
+                    _titleController.text,
+                    _descriptionController.text,
+                  );
+                } else {
+                  await _databaseService.updateTodo(
+                    todo.id,
+                    _titleController.text,
+                    _descriptionController.text,
+                  );
+                }
+                Navigator.pop(context);
+              },
+              child: Text(todo == null ? "Add" : "Edit"),
+            ),
+          ],
+        );
       },
     );
   }
