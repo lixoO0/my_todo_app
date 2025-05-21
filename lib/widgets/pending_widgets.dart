@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_todo_app/model/todo_model.dart';
 import 'package:my_todo_app/services/database_services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:my_todo_app/services/notification_service.dart';
 
 class PendingWidget extends StatefulWidget {
   const PendingWidget({super.key});
@@ -62,36 +63,41 @@ class _PendingWidgetState extends State<PendingWidget> {
                 ),
                 child: Slidable(
                   key: ValueKey(todo.id),
-                  endActionPane: ActionPane(motion: DrawerMotion(),
-                  children: [
-                    SlidableAction(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      icon: Icons.done,
-                      label: "Mark as done",
-                      onPressed: (context){
-                      _databaseServices.updateTodoStatus(todo.id, true);
-                    })
-                  ],
+                  endActionPane: ActionPane(
+                    motion: DrawerMotion(),
+                    children: [
+                      SlidableAction(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        icon: Icons.done,
+                        label: "Mark as done",
+                        onPressed: (context) {
+                          _databaseServices.updateTodoStatus(todo.id, true);
+                        },
+                      ),
+                    ],
                   ),
-                  startActionPane: ActionPane(motion: DrawerMotion(),
-                  children: [
-                    SlidableAction(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.white,
-                      icon: Icons.edit,
-                      label: "Edit",
-                      onPressed: (context){
-                      _showTaskDialog(context, todo: todo);
-                    }),
-                    SlidableAction(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      icon: Icons.delete,
-                      label: "Delete",
-                      onPressed: (context) async{
-                      await _databaseServices.deleteTodo(todo.id);
-                    }),
+                  startActionPane: ActionPane(
+                    motion: DrawerMotion(),
+                    children: [
+                      SlidableAction(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit,
+                        label: "Edit",
+                        onPressed: (context) {
+                          _showTaskDialog(context, todo: todo);
+                        },
+                      ),
+                      SlidableAction(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete,
+                        label: "Delete",
+                        onPressed: (context) async {
+                          await _databaseServices.deleteTodo(todo.id);
+                        },
+                      ),
                     ],
                   ),
                   child: ListTile(
@@ -146,10 +152,14 @@ class _PendingWidgetState extends State<PendingWidget> {
       },
     );
   }
+
   void _showTaskDialog(BuildContext context, {Todo? todo}) {
-    final TextEditingController _titleController = TextEditingController( text: todo?.title ?? '');
-    final TextEditingController _descriptionController =
-        TextEditingController(text: todo?.description ?? '');
+    final TextEditingController _titleController = TextEditingController(
+      text: todo?.title ?? '',
+    );
+    final TextEditingController _descriptionController = TextEditingController(
+      text: todo?.description ?? '',
+    );
     final DatabaseServices _databaseService = DatabaseServices();
 
     showDialog(
@@ -209,6 +219,10 @@ class _PendingWidgetState extends State<PendingWidget> {
                   await _databaseService.addTodoTask(
                     _titleController.text,
                     _descriptionController.text,
+                  );
+                  await NotificationService().showNotification(
+                    title: "Нове завдання додано!",
+                    body: _titleController.text,
                   );
                 } else {
                   await _databaseService.updateTodo(

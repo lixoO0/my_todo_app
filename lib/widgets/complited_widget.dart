@@ -87,13 +87,19 @@ class _ComplitedWidgetState extends State<ComplitedWidget> {
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Colors.white,
+                        decoration: TextDecoration.lineThrough,
                       ),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
                         todo.description,
-                        style: TextStyle(fontSize: 14, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                        
                       ),
                     ),
                     trailing: Column(
