@@ -5,6 +5,8 @@ import 'package:my_todo_app/services/auth_services.dart';
 import 'package:my_todo_app/services/database_services.dart';
 import 'package:my_todo_app/widgets/complited_widget.dart';
 import 'package:my_todo_app/widgets/pending_widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:my_todo_app/providers/theme_provider.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -17,21 +19,28 @@ class _HomescreenState extends State<Homescreen> {
   int _buttonIndex = 0;
 
   final _widgets = [
-    //pending task widget
-   PendingWidget(),
-    //completed task widget
+    PendingWidget(),
     ComplitedWidget(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDark;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+
     return Scaffold(
-      backgroundColor: Color(0xFF1d2630),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Color(0xFF1d2630),
-        foregroundColor: Colors.white,
-        title: Text("ToDo"),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: textColor,
+        title: const Text("ToDo"),
         actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            },
+          ),
           IconButton(
             onPressed: () async {
               await AuthService().signOut();
@@ -40,7 +49,7 @@ class _HomescreenState extends State<Homescreen> {
                 MaterialPageRoute(builder: (context) => LoginScreen()),
               );
             },
-            icon: Icon(Icons.exit_to_app),
+            icon: const Icon(Icons.exit_to_app),
           ),
         ],
       ),
@@ -48,81 +57,60 @@ class _HomescreenState extends State<Homescreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    setState(() {
-                      _buttonIndex = 0;
-                    });
-                  },
-                  child: Container(
-                    height: 50,
-                    width: MediaQuery.of(context).size.width / 3,
-                    decoration: BoxDecoration(
-                      color: _buttonIndex == 0 ? Colors.indigo : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Pending",
-                        style: TextStyle(
-                          fontSize: _buttonIndex == 0 ? 20 : 18,
-                          fontWeight: FontWeight.w500,
-                          color:
-                              _buttonIndex == 0
-                                  ? Colors.white
-                                  : const Color.fromARGB(255, 0, 0, 0),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    setState(() {
-                      _buttonIndex = 1;
-                    });
-                  },
-                  child: Container(
-                    height: 50,
-                    width: MediaQuery.of(context).size.width / 3,
-                    decoration: BoxDecoration(
-                      color: _buttonIndex == 1 ? Colors.indigo : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Completed",
-                        style: TextStyle(
-                          fontSize: _buttonIndex == 1 ? 20 : 18,
-                          fontWeight: FontWeight.w500,
-                          color:
-                              _buttonIndex == 1
-                                  ? Colors.white
-                                  : const Color.fromARGB(255, 0, 0, 0),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                _buildFilterButton("Pending", 0, isDark),
+                _buildFilterButton("Completed", 1, isDark),
               ],
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             _widgets[_buttonIndex],
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        child: Icon(Icons.add),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
         onPressed: () {
           _showTaskDialog(context);
         },
+      ),
+    );
+  }
+
+  Widget _buildFilterButton(String label, int index, bool isDark) {
+    bool isSelected = _buttonIndex == index;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        setState(() {
+          _buttonIndex = index;
+        });
+      },
+      child: Container(
+        height: 50,
+        width: MediaQuery.of(context).size.width / 3,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.indigo
+              : (isDark ? Colors.grey[800] : Colors.grey[200]),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: isSelected ? 20 : 18,
+              fontWeight: FontWeight.w500,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : Colors.black),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -137,37 +125,34 @@ class _HomescreenState extends State<Homescreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
           title: Text(
             todo == null ? "Add task" : "Edit task",
             style: TextStyle(
-              color: Colors.black,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
               fontSize: 20,
               fontWeight: FontWeight.w500,
             ),
           ),
           content: SingleChildScrollView(
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      labelText: "Title",
-                      border: OutlineInputBorder(),
-                    ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: "Title",
+                    border: OutlineInputBorder(),
                   ),
-                  SizedBox(height: 10),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: "Description",
-                      border: OutlineInputBorder(),
-                    ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: "Description",
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -175,7 +160,7 @@ class _HomescreenState extends State<Homescreen> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text(
+              child: const Text(
                 "Cancel",
                 style: TextStyle(color: Colors.red, fontSize: 18),
               ),

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:my_todo_app/model/todo_model.dart';
@@ -45,8 +46,7 @@ class _ComplitedWidgetState extends State<ComplitedWidget> {
             itemCount: todos.length,
             itemBuilder: (context, index) {
               Todo todo = todos[index];
-              final DateTime dt = todo.timeStamp.toDate();
-
+              final DateTime dt = todo.timeStamp;
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -99,7 +99,6 @@ class _ComplitedWidgetState extends State<ComplitedWidget> {
                           color: Colors.white70,
                           decoration: TextDecoration.lineThrough,
                         ),
-                        
                       ),
                     ),
                     trailing: Column(

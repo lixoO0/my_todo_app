@@ -1,75 +1,104 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:my_todo_app/model/todo_model.dart';
 
-
 class DatabaseServices {
-  final CollectionReference todoCollection = FirebaseFirestore.instance
-      .collection('todos');
+  final CollectionReference todoCollection =
+      FirebaseFirestore.instance.collection('todos');
 
-  User? user = FirebaseAuth.instance.currentUser;
+  final Box<Todo> todoBox = Hive.box<Todo>('todos_box');
 
-  //add todo task
-  Future<DocumentReference> addTodoTask(
-    String title,
-    String description,
-  ) async {
-    return await todoCollection.add({
-      'userId': user!.uid,
-      'title': title,
-      'description': description,
-      'completed': false,
-      'createdAt': FieldValue.serverTimestamp(),
+  String get _userId => FirebaseAuth.instance.currentUser!.uid;
+
+  Future<void> addTodoTask(String title, String description) async {
+    // 1.1) Створюємо обʼєкт todo
+    final newTodo = Todo(
+      id: '',
+      userId: _userId,
+      title: title,
+      description: description,
+      completed: false,
+      timeStamp: DateTime.now(),
+    );
+
+    // Пишемо у Firestore — створюємо новий документ
+    final docRef = await todoCollection.add({
+      'userId': newTodo.userId,
+      'title': newTodo.title,
+      'description': newTodo.description,
+      'completed': newTodo.completed,
+      'createdAt': Timestamp.fromDate(newTodo.timeStamp),
     });
+
+    newTodo.id = docRef.id;
+
+    // Додаємо у Hive
+    await todoBox.add(newTodo);
   }
 
-  //Update todo task
   Future<void> updateTodo(String id, String title, String description) async {
-    final updatetodoCollection = FirebaseFirestore.instance.collection("todos").doc(id);
-    return await updatetodoCollection.update({
+    await todoCollection.doc(id).update({
       'title': title,
       'description': description,
     });
+
+    final todo = todoBox.values.firstWhere((t) => t.id == id && t.userId == _userId);
+    todo.title = title;
+    todo.description = description;
+    await todo.save();
   }
 
-  //update todo status
   Future<void> updateTodoStatus(String id, bool completed) async {
-    return await todoCollection.doc(id).update({
+    await todoCollection.doc(id).update({
       'completed': completed,
     });
+
+    final todo = todoBox.values.firstWhere((t) => t.id == id && t.userId == _userId);
+    todo.completed = completed;
+    await todo.save();
   }
 
-  //delete todo task
   Future<void> deleteTodo(String id) async {
-    return await todoCollection.doc(id).delete();
+    await todoCollection.doc(id).delete();
+
+    final todo = todoBox.values.firstWhere((t) => t.id == id && t.userId == _userId);
+    await todo.delete();
   }
 
-  //get pending tasks
   Stream<List<Todo>> get todos {
-  return todoCollection
-      .where('userId', isEqualTo: user!.uid)
-      .where('completed', isEqualTo: false)
-      .snapshots()
-      .map(_todoListFromSnapshot);
-}
+    return todoCollection
+        .where('userId', isEqualTo: _userId)
+        .where('completed', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(_todoListFromSnapshot);
+  }
 
-Stream<List<Todo>> get completedTodos {
-  return todoCollection
-      .where('userId', isEqualTo: user!.uid)
-      .where('completed', isEqualTo: true)
-      .snapshots()
-      .map(_todoListFromSnapshot);
-}
-
+  Stream<List<Todo>> get completedTodos {
+    return todoCollection
+        .where('userId', isEqualTo: _userId)
+        .where('completed', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(_todoListFromSnapshot);
+  }
 
   List<Todo> _todoListFromSnapshot(QuerySnapshot snapshot) {
     return snapshot.docs.map((doc) {
-      return Todo(
-        id: doc.id,
-        title: doc['title'] ?? '',
-        description: doc['description'] ?? '',
-        completed: doc['completed'] ?? false,
-        timeStamp: doc['createdAt'] ?? '');
-          }).toList();
+      return Todo.fromSnapshot(doc);
+    }).toList();
+  }
+
+  List<Todo> get pendingTodosLocal {
+    return todoBox.values
+        .where((t) => t.userId == _userId && t.completed == false)
+        .toList();
+  }
+
+  List<Todo> get completedTodosLocal {
+    return todoBox.values
+        .where((t) => t.userId == _userId && t.completed == true)
+        .toList();
   }
 }
